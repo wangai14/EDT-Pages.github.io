@@ -1607,6 +1607,219 @@ html.dark-mode .moon-icon {
     box-shadow: 0 2px 10px rgba(139, 92, 246, 0.3);
 }
 
+/* ==================== CF 使用统计模块样式 ==================== */
+
+.cf-usage-module {
+    display: none;
+}
+
+.cf-usage-module[style*="display: block"] {
+    display: block !important;
+}
+
+.cf-usage-wrapper {
+    padding: 20px 0;
+}
+
+/* 统计卡片 */
+.cf-stats-card {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+    border-left: 4px solid #3b82f6;
+}
+
+.cf-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 20px;
+}
+
+.cf-stat-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.cf-stat-label {
+    font-size: 12px;
+    color: #6b7280;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+.cf-stat-value {
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.cf-value-green {
+    color: #10b981;
+}
+
+.cf-value-blue {
+    color: #3b82f6;
+}
+
+.cf-value-orange {
+    color: #f59e0b;
+}
+
+/* 进度条区域 */
+.cf-progress-section {
+    margin-bottom: 20px;
+}
+
+.cf-progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.cf-progress-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.cf-percentage-badge {
+    font-size: 13px;
+    font-weight: 600;
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.1);
+    padding: 4px 12px;
+    border-radius: 20px;
+}
+
+.cf-progress-bar {
+    position: relative;
+    height: 28px;
+    background: linear-gradient(90deg, #f3f4f6 0%, #e5e7eb 100%);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.cf-bar-segment {
+    position: absolute;
+    height: 100%;
+    border-radius: 0;
+    width: 0%;
+    transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    display: flex;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: white;
+}
+
+.cf-bar-green {
+    background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.5);
+    justify-content: flex-end;
+    padding-right: 12px;
+    opacity: 0.9;
+}
+
+.cf-bar-blue {
+    background: linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%);
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.5);
+    justify-content: center;
+    opacity: 0.85;
+}
+
+.cf-percentage-center {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: #1f2937;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+/* 信息提示框 */
+.cf-info-box {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.05) 0%, rgba(234, 179, 8, 0.05) 100%);
+    border: 1px solid rgba(249, 115, 22, 0.2);
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 0;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.cf-info-icon {
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.cf-info-text {
+    font-size: 13px;
+    color: #6b7280;
+    line-height: 1.6;
+}
+
+.cf-info-text strong {
+    color: #1f2937;
+}
+
+.cf-highlight {
+    color: #f59e0b !important;
+}
+
+/* ==================== 深色模式支持 ==================== */
+
+html.dark-mode .cf-stats-card {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(6, 182, 212, 0.2) 100%);
+    border-left-color: #3b82f6;
+}
+
+html.dark-mode .cf-stat-label {
+    color: var(--text-secondary);
+}
+
+html.dark-mode .cf-progress-title {
+    color: var(--text-primary);
+}
+
+html.dark-mode .cf-percentage-badge {
+    color: #fbbf24;
+    background: rgba(251, 191, 36, 0.1);
+}
+
+html.dark-mode .cf-progress-bar {
+    background: linear-gradient(90deg, #374151 0%, #1f2937 100%);
+}
+
+html.dark-mode .cf-percentage-center {
+    color: var(--text-primary);
+}
+
+html.dark-mode .cf-info-box {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.1) 0%, rgba(234, 179, 8, 0.1) 100%);
+    border-color: rgba(249, 115, 22, 0.3);
+}
+
+html.dark-mode .cf-info-text {
+    color: var(--text-secondary);
+}
+
+html.dark-mode .cf-info-text strong {
+    color: var(--text-primary);
+}
+
+html.dark-mode .cf-highlight {
+    color: #fbbf24 !important;
+}
+
 </style>
 </head>
 <body>
@@ -1629,6 +1842,59 @@ html.dark-mode .moon-icon {
                 <div class="header-buttons">
                     <button type="button" class="btn btn-danger btn-reset" onclick="resetConfigWithConfirm()">⚠️ 重置配置</button>
                     <button type="button" class="btn btn-primary" onclick="logout()">👋 退出登录</button>
+                </div>
+            </div>
+
+            <!-- Cloudflare Workers/Pages 使用统计模块 -->
+            <div class="module cf-usage-module" id="cfUsageModule">
+                <div class="module-title">
+                    Workers/Pages 请求使用情况
+                </div>
+                <div class="module-content">
+                    <div class="cf-usage-wrapper">
+                        <!-- 使用统计卡片 -->
+                        <div class="cf-stats-card">
+                            <div class="cf-stats-grid">
+                                <div class="cf-stat-item">
+                                    <div class="cf-stat-label">Workers 请求</div>
+                                    <div class="cf-stat-value cf-value-green" id="cfWorkerCount">-</div>
+                                </div>
+                                <div class="cf-stat-item">
+                                    <div class="cf-stat-label">Pages 请求</div>
+                                    <div class="cf-stat-value cf-value-blue" id="cfPagesCount">-</div>
+                                </div>
+                                <div class="cf-stat-item">
+                                    <div class="cf-stat-label">日配额</div>
+                                    <div class="cf-stat-value cf-value-orange">100,000</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 进度条 -->
+                        <div class="cf-progress-section">
+                            <div class="cf-progress-header">
+                                <span class="cf-progress-title">请求使用进度</span>
+                                <span class="cf-percentage-badge" id="cfPercentage">-</span>
+                            </div>
+                            <div class="cf-progress-bar">
+                                <!-- Workers 进度条 (绿色) -->
+                                <div class="cf-bar-segment cf-bar-green" id="cfWorkerBar" title="Workers 请求"></div>
+                                <!-- Pages 进度条 (蓝色) -->
+                                <div class="cf-bar-segment cf-bar-blue" id="cfPagesBar" title="Pages 请求"></div>
+                                <!-- 总体百分比文字 (中央) -->
+                                <div class="cf-percentage-center" id="cfPercentageCenter">0%</div>
+                            </div>
+                        </div>
+
+                        <!-- 信息提示 -->
+                        <div class="cf-info-box">
+                            <div class="cf-info-icon">ℹ️</div>
+                            <div class="cf-info-text">
+                                <strong>每日归零重置时间：</strong><br>北京时间 (UTC+8) 每天 <strong class="cf-highlight">8:00</strong> 重置<br>
+                                今日使用情况总计：<strong class="cf-highlight" id="cfTotalDisplay">-</strong>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -2154,6 +2420,18 @@ function renderUI() {
     // 标题
     document.getElementById('pageTitle').textContent = (currentConfig.优选订阅生成?.SUBNAME || 'edgetunnel') + '设置页面';
     
+    // 检查 CF 使用情况并显示模块
+    const cfUsageModule = document.getElementById('cfUsageModule');
+    const cfUsage = currentConfig.CF?.Usage;
+    if (cfUsage && cfUsage.success) {
+        cfUsageModule.style.display = 'block';
+        cfUsageModule.classList.remove('cf-usage-module');
+        updateCFUsageDisplay(cfUsage);
+    } else {
+        cfUsageModule.style.display = 'none';
+        cfUsageModule.classList.add('cf-usage-module');
+    }
+    
     // 订阅链接
     const token = currentConfig.优选订阅生成?.TOKEN;
     const host = currentConfig.HOST;
@@ -2234,6 +2512,38 @@ function renderUI() {
     
     // 从 localStorage 加载模块展开/折叠状态
     loadModuleStates();
+}
+
+// CF 使用情况显示函数
+function updateCFUsageDisplay(cfUsage) {
+    const workers = cfUsage.workers || 0;
+    const pages = cfUsage.pages || 0;
+    const total = cfUsage.total || 0;
+    const dailyQuota = 100000;
+    
+    // 更新显示数值
+    document.getElementById('cfWorkerCount').textContent = workers.toLocaleString();
+    document.getElementById('cfPagesCount').textContent = pages.toLocaleString();
+    document.getElementById('cfTotalDisplay').textContent = total.toLocaleString();
+    
+    // 计算百分比
+    const percentage = ((total / dailyQuota) * 100).toFixed(2);
+    document.getElementById('cfPercentage').textContent = percentage + '%';
+    
+    // 计算比例并设置进度条宽度
+    const workersRatio = (workers / dailyQuota) * 100;
+    const pagesRatio = (pages / dailyQuota) * 100;
+    
+    // Workers 进度条：从左边开始
+    const workerBarEl = document.getElementById('cfWorkerBar');
+    workerBarEl.style.width = Math.min(workersRatio, 100) + '%';
+    workerBarEl.textContent = '';
+    
+    // Pages 进度条：紧跟在 Workers 进度条后面
+    const pagesBarEl = document.getElementById('cfPagesBar');
+    pagesBarEl.style.width = Math.min(pagesRatio, 100 - workersRatio) + '%';
+    pagesBarEl.style.left = Math.min(workersRatio, 100) + '%';
+    pagesBarEl.textContent = '';
 }
 
 async function loadCustomIPs() {
