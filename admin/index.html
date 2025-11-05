@@ -2065,6 +2065,42 @@
             box-shadow: 0 2px 10px rgba(139, 92, 246, 0.3);
         }
 
+        .btn-clear-config {
+            background: linear-gradient(135deg, #ef4444 0, #dc2626 100%);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-clear-config::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left .5s ease
+        }
+
+        .btn-clear-config:hover::before {
+            left: 100%
+        }
+
+        .btn-clear-config:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(239, 68, 68, 0.5);
+        }
+
+        .btn-clear-config:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 10px rgba(239, 68, 68, 0.3);
+        }
+
+        html.dark-mode .btn-clear-config {
+            background: linear-gradient(135deg, #ef4444 0, #dc2626 100%);
+            color: #fff;
+        }
+
         /* ==================== CF 使用统计模块样式 ==================== */
 
         .cf-usage-module {
@@ -2340,9 +2376,8 @@
                     <h1 id="pageTitle">加载中...</h1>
                 </div>
                 <div class="header-buttons">
-                    <button type="button" class="btn btn-danger btn-reset" onclick="resetConfigWithConfirm()">⚠️
-                        重置配置</button>
-                    <button type="button" class="btn btn-primary" onclick="logout()">👋 退出登录</button>
+                    <button type="button" class="btn btn-danger btn-reset" onclick="resetConfigWithConfirm()">⚠️重置配置</button>
+                    <button type="button" class="btn btn-primary" onclick="logout()">👋退出登录</button>
                 </div>
             </div>
 
@@ -2718,6 +2753,8 @@
                         <div class="notification-controls">
                             <button type="button" class="btn btn-notification-config"
                                 onclick="openTelegramConfigModal()">⚙️参数配置</button>
+                            <button type="button" class="btn btn-clear-config"
+                                onclick="clearTelegramConfig()">🗑️清除配置</button>
                         </div>
                     </div>
 
@@ -2729,6 +2766,8 @@
                         <div class="notification-controls">
                             <button type="button" class="btn btn-notification-config"
                                 onclick="openCloudflareConfigModal()">⚙️参数配置</button>
+                            <button type="button" class="btn btn-clear-config"
+                                onclick="clearCloudflareConfig()">🗑️清除配置</button>
                         </div>
                     </div>
 
@@ -2828,6 +2867,32 @@
             <div class="reset-modal-buttons">
                 <button type="button" class="btn btn-primary btn-confirm-reset" onclick="confirmReset()">确定重置</button>
                 <button type="button" class="btn btn-secondary" onclick="closeResetModal()">取消重置</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 清除Telegram配置确认弹窗 -->
+    <div class="modal-overlay" id="clearTelegramModal" onclick="closeClearTelegramModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <h2 class="reset-modal-title">⚠️ 清除 Telegram 配置</h2>
+            <p class="reset-modal-description">清除 Telegram Bot 通知配置后，将无法继续接收 Telegram 消息通知。此操作不可撤销，请谨慎操作。</p>
+            <p class="reset-modal-confirm">确定是否清除 Telegram 通知配置？</p>
+            <div class="reset-modal-buttons">
+                <button type="button" class="btn btn-primary btn-confirm-reset" onclick="confirmClearTelegramConfig()">确定清除</button>
+                <button type="button" class="btn btn-secondary" onclick="closeClearTelegramModal()">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 清除Cloudflare配置确认弹窗 -->
+    <div class="modal-overlay" id="clearCloudflareModal" onclick="closeClearCloudflareModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <h2 class="reset-modal-title">⚠️ 清除 Cloudflare 配置</h2>
+            <p class="reset-modal-description">清除 Cloudflare 配置后，将无法继续统计 Workers/Pages 的请求数。此操作不可撤销，请谨慎操作。</p>
+            <p class="reset-modal-confirm">确定是否清除 Cloudflare 通知配置？</p>
+            <div class="reset-modal-buttons">
+                <button type="button" class="btn btn-primary btn-confirm-reset" onclick="confirmClearCloudflareConfig()">确定清除</button>
+                <button type="button" class="btn btn-secondary" onclick="closeClearCloudflareModal()">取消</button>
             </div>
         </div>
     </div>
@@ -4614,6 +4679,77 @@
                 updateButtonStates();
             } catch (error) {
                 showToast('❌ 保存失败: ' + error.message, 'error');
+            }
+        }
+
+        // 清除 Telegram 配置
+        // 清除 Telegram 配置
+        function clearTelegramConfig() {
+            document.getElementById('clearTelegramModal').classList.add('show');
+        }
+
+        function closeClearTelegramModal(event) {
+            if (!event || event.target.id === 'clearTelegramModal') {
+                document.getElementById('clearTelegramModal').classList.remove('show');
+            }
+        }
+
+        async function confirmClearTelegramConfig() {
+            try {
+                const response = await fetch('/admin/tg.json', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ init: true })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    closeClearTelegramModal();
+                    showToast('✅ Telegram 配置已清除，页面即将刷新...', 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    showToast('❌ 清除失败: ' + (data.message || '未知错误'), 'error');
+                }
+            } catch (error) {
+                showToast('❌ 清除出错: ' + error.message, 'error');
+            }
+        }
+
+        // 清除 Cloudflare 配置
+        function clearCloudflareConfig() {
+            document.getElementById('clearCloudflareModal').classList.add('show');
+        }
+
+        function closeClearCloudflareModal(event) {
+            if (!event || event.target.id === 'clearCloudflareModal') {
+                document.getElementById('clearCloudflareModal').classList.remove('show');
+            }
+        }
+
+        async function confirmClearCloudflareConfig() {
+            try {
+                const response = await fetch('/admin/cf.json', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ init: true })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    closeClearCloudflareModal();
+                    showToast('✅ Cloudflare 配置已清除，页面即将刷新...', 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    showToast('❌ 清除失败: ' + (data.message || '未知错误'), 'error');
+                }
+            } catch (error) {
+                showToast('❌ 清除出错: ' + error.message, 'error');
             }
         }
 
