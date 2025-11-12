@@ -5423,7 +5423,7 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                 
                 // 创建 AbortController 实现 5 秒超时
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 5000);
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
                 
                 const response = await fetch(`/admin/check?${params}&_t=${Date.now()}`, {
                     method: 'GET',
@@ -5478,7 +5478,7 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                 
                 // 判断是否为超时错误
                 if (error.name === 'AbortError') {
-                    statusEl.innerHTML = `❌ <strong>验证超时</strong><br/><small style="opacity: 0.9;">请求超过 5 秒无响应，请检查代理连接</small>`;
+                    statusEl.innerHTML = `❌ <strong>验证超时</strong><br/><small style="opacity: 0.9;">请求超过 10 秒无响应，请检查代理连接</small>`;
                 } else {
                     statusEl.innerHTML = `❌ <strong>验证失败</strong><br/><small style="opacity: 0.9;">${error.message}</small>`;
                 }
