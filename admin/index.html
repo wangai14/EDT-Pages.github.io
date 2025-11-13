@@ -6582,8 +6582,27 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
             detectionBox.innerHTML = '<div class="ip-detection-info">正在检测您的网络环境...</div>';
 
             try {
-                const response = await fetch(`https://speed.cloudflare.com/cdn-cgi/trace?_t=${Date.now()}`);
-                const text = await response.text();
+                // 首先尝试主链接
+                let response, text;
+                try {
+                    console.log('[在线优选] 尝试使用主链接 speed.cloudflare.com 检测...');
+                    response = await fetch(`https://speed.cloudflare.com/cdn-cgi/trace?_t=${Date.now()}`, {
+                        signal: AbortSignal.timeout(5000) // 5秒超时
+                    });
+                    text = await response.text();
+                    console.log('[在线优选] 主链接检测成功');
+                    // 保存使用的检测域名供locations使用
+                    window.detectDomain = 'speed.cloudflare.com';
+                } catch (primaryError) {
+                    console.warn('[在线优选] 主链接检测失败，尝试使用备用链接 cf.090227.xyz...', primaryError);
+                    response = await fetch(`https://cf.090227.xyz/cdn-cgi/trace?_t=${Date.now()}`, {
+                        signal: AbortSignal.timeout(5000) // 5秒超时
+                    });
+                    text = await response.text();
+                    console.log('[在线优选] 备用链接检测成功');
+                    // 保存使用的检测域名供locations使用
+                    window.detectDomain = 'cf.090227.xyz';
+                }
                 console.log('[在线优选] 检测响应:', text);
 
                 // 解析响应
@@ -6719,8 +6738,11 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
         // 加载locations数据
         async function loadLocationsData() {
             try {
-                const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '');
-                const response = await fetch(`https://speed.cloudflare.com/locations`);
+                // 使用与检测相同的域名
+                const domain = window.detectDomain || 'speed.cloudflare.com';
+                console.log(`[在线优选] 使用 ${domain} 加载位置数据...`);
+                
+                const response = await fetch(`https://${domain}/locations`);
                 locationsData = await response.json();
                 console.log(`[在线优选] 成功加载 ${locationsData.length} 个位置数据`);
             } catch (error) {
