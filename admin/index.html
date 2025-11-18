@@ -6834,7 +6834,7 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                     text = await response.text();
                     console.log('[在线优选] 主链接检测成功');
                     // 保存使用的检测域名供locations使用
-                    window.detectDomain = 'speed.cloudflare.com';
+                    window.detectDomain = 'https://speed.cloudflare.com';
                 } catch (primaryError) {
                     console.warn('[在线优选] 主链接检测失败，尝试使用当前域名本地路径...', primaryError);
                     response = await fetch(`/cdn-cgi/trace?_t=${Date.now()}`, {
@@ -6981,7 +6981,7 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
         async function loadLocationsData() {
             try {
                 // 使用当前域名加载位置数据，避免跨域问题
-                const url = window.detectDomain === window.location.origin ? '/locations' : `${window.detectDomain}/locations`;
+                const url = `${window.detectDomain}/locations`;
                 console.log(`[在线优选] 加载位置数据: ${url}`);
 
                 const response = await fetch(url);
