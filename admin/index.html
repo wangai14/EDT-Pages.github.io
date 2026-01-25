@@ -4663,14 +4663,16 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                         <div class="input-wrapper" style="flex-direction: column; align-items: stretch;">
                             <select id="echDNSSelect" title="ECH DNS服务" style="display: none;"
                                 onchange="onEchDNSSelectChange()">
+                                <option value="udp://45.90.28.0:5353">
+                                    udp://45.90.28.0:5353（NextDNS）小白推荐选这个！！！</option>
+                                <option value="https://doh.applied-privacy.net/query">
+                                    https://doh.applied-privacy.net/query（Applied Privacy DoH）</option>
+                                <option value="https://odvr.nic.cz/doh">
+                                    https://odvr.nic.cz/doh（CZ.NIC DoH）</option>
                                 <option value="https://doh.cmliussss.net/CMLiussss">
-                                    https://doh.cmliussss.net/CMLiussss（Cloudflare DoH：CM镜像）小白推荐选这个！！！</option>
+                                    https://doh.cmliussss.net/CMLiussss（Cloudflare DoH：CM镜像）</option>
                                 <option value="https://doh.cmliussss.com/CMLiussss">
                                     https://doh.cmliussss.com/CMLiussss（Google DoH：CM镜像）</option>
-                                <option value="udp://45.90.28.0:5353">
-                                    udp://45.90.28.0:5353（NextDNS）</option>
-                                <option value="udp://208.67.222.222:5353">
-                                    udp://208.67.222.222:5353（OpenDNS）</option>
                                 <option value="tls://dns.alidns.com">
                                     tls://dns.alidns.com（阿里DoT：国内DNS不保证可用性，是否可用需自行验证）</option>
                                 <option value="tls://dot.pub">
