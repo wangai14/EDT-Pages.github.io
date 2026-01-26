@@ -6728,6 +6728,15 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                 customInput.style.display = 'none';
                 customInput.value = '';
                 hiddenValue.value = null;
+
+                // 检查当前DNS服务是否为国内DNS
+                const echDNSSelect = document.getElementById('echDNSSelect');
+                const selectedDNSOption = echDNSSelect.options[echDNSSelect.selectedIndex];
+                const dnsRegion = selectedDNSOption.dataset.region;
+
+                if (dnsRegion === 'domestic') {
+                    alert('⚠️ ECH 配置提示\n\n默认使用节点HOST伪装域名 配合 国内 DNS 可能导致 ECH 解析失败。\n\n解决方案（任选其一）：\n① 将 ECH 解析域名改为 cloudflare-ech.com（推荐）\n② 将 ECH DNS 切换为国际服务（如 NextDNS）');
+                }
             } else if (select.value === 'custom') {
                 customInput.style.display = 'block';
                 hiddenValue.value = customInput.value;
