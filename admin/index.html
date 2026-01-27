@@ -5796,12 +5796,14 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                 </div>
             </div>
 
-            <div class="btn-group" style="justify-content: center; margin-top: 30px; gap: 15px;">
-                <button type="button" class="btn btn-primary" onclick="openFOFA()"
-                    style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <div class="btn-group" style="justify-content: center; margin-top: 30px; gap: 15px; flex-wrap: wrap;">
+                <button type="button" class="btn btn-proxyip-help" onclick="openFOFA()">
                     FOFA 测绘
                 </button>
-                <button type="button" class="btn btn-secondary" onclick="closeGetMoreProxyIPModal()" style="flex: 1;">
+                <button type="button" class="btn btn-ech-help" onclick="window.open('https://check.proxyip.cmliussss.net/', '_blank')">
+                    可用性验证
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="closeGetMoreProxyIPModal()" style="flex: 1; min-width: 100px;">
                     关闭
                 </button>
             </div>
@@ -11329,9 +11331,6 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
 
             // 打开新窗口
             window.open(url, '_blank');
-
-            // 关闭模态框
-            closeGetMoreProxyIPModal();
         }
 
     </script>
