@@ -1571,6 +1571,23 @@
         }
 
         @media(max-width:768px) {
+            .module-footer {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .module-footer .btn-group {
+                margin-left: auto;
+                width: auto;
+                align-self: flex-end;
+            }
+
+            .module-footer .btn-ech-help,
+            .module-footer .btn-proxyip-help {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+
             .ech-tabs::-webkit-scrollbar {
                 height: 3px;
             }
