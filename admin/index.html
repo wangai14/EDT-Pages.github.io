@@ -11777,7 +11777,7 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
             return new Promise((resolve) => {
                 const { protocol, proxy: proxyUrl } = proxy;
                 const cleanProxy = proxyUrl.replace(protocol + '://', '');
-                const checkUrl = `./check?${protocol}=${encodeURIComponent(cleanProxy)}&_t=${Date.now()}`;
+                const checkUrl = `./admin/check?${protocol}=${encodeURIComponent(cleanProxy)}&_t=${Date.now()}`;
                 
                 // 设置15秒超时
                 const timeoutId = setTimeout(() => {
@@ -12087,7 +12087,7 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
             return new Promise((resolve) => {
                 const { protocol, proxy: proxyUrl } = proxy;
                 const cleanProxy = proxyUrl.replace(protocol + '://', '');
-                const checkUrl = `./check?${protocol}=${encodeURIComponent(cleanProxy)}&_t=${Date.now()}`;
+                const checkUrl = `./admin/check?${protocol}=${encodeURIComponent(cleanProxy)}&_t=${Date.now()}`;
                 
                 // 设置15秒超时
                 const timeoutId = setTimeout(() => {
