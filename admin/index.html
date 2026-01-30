@@ -11992,13 +11992,56 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                 });
         }
 
+        // 大洲信息映射
+        const continentInfo = {
+            'AS': { emoji: '🌏', name: '亚洲' },
+            'NA': { emoji: '🌎', name: '北美' },
+            'EU': { emoji: '🌍', name: '欧洲' },
+            'AF': { emoji: '🌍', name: '非洲' },
+            'SA': { emoji: '🌎', name: '南美' },
+            'OC': { emoji: '🌏', name: '大洋洲' },
+            'AN': { emoji: '❄️', name: '南极洲' }
+        };
+
         function populateProxyRegionSelect(type) {
             const config = proxyConfigs[type];
             const select = document.getElementById(config.regionSelectId);
             let html = '<option value="">-- 请选择地区 --</option>';
 
+            // 构建按大洲分组的结构
+            const continentMap = {};
+
+            // 遍历所有国家，归类到大洲
             for (const [country, proxies] of Object.entries(window[config.countryMap])) {
-                html += `<option value="${country}">${country}(${proxies.length})</option>`;
+                const proxy = proxies[0]; // 取第一个代理获取大洲信息
+                const continent = proxy.continent || 'Unknown';
+                const continentData = continentInfo[continent] || { emoji: '🌍', name: continent };
+
+                if (!continentMap[continent]) {
+                    continentMap[continent] = {
+                        emoji: continentData.emoji,
+                        name: continentData.name,
+                        countries: {}
+                    };
+                }
+
+                continentMap[continent].countries[country] = {
+                    count: proxies.length,
+                    name: proxy.country_cn || country,
+                    emoji: proxy.country_emoji || ''
+                };
+            }
+
+            // 生成 HTML
+            for (const [continentCode, continentData] of Object.entries(continentMap)) {
+                const label = `${continentData.emoji} ${continentData.name} / ${continentCode}`;
+                html += `<optgroup label="${label}">`;
+
+                for (const [country, countryData] of Object.entries(continentData.countries)) {
+                    html += `<option value="${country}">${countryData.emoji} ${countryData.name}(${countryData.count})</option>`;
+                }
+
+                html += `</optgroup>`;
             }
 
             select.innerHTML = html;
