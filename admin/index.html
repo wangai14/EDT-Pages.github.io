@@ -221,8 +221,8 @@
             font-weight: 700;
             background: linear-gradient(135deg, #faab41 0, #f6821f 100%);
             -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
             background-clip: text;
+            -webkit-text-fill-color: transparent;
             margin: 0 0 12px;
             line-height: 1.2;
             letter-spacing: -0.5px
@@ -3000,7 +3000,7 @@
                 margin-right: 0;
                 margin-bottom: 10px;
                 width: 100%;
-                min-height: auto;
+                min-height: 0;
             }
 
             .btn-start-optimize {
@@ -3797,6 +3797,7 @@
             margin: 0;
             background: linear-gradient(135deg, #f6821f 0%, #faab41 100%);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
             font-family: 'Orbitron', sans-serif;
             display: flex;
@@ -9457,7 +9458,7 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
             document.getElementById('subAPIConfirmBtn').disabled = true;
             document.getElementById('subAPIConfirmBtn').style.opacity = '0.5';
             document.getElementById('subAPIModal').classList.add('show');
-            
+
             // 加载 SUBAPI 列表
             loadSubAPIList(currentValue);
         }
@@ -9472,18 +9473,18 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
         async function loadSubAPIList(currentValue) {
             const selectEl = document.getElementById('subAPISelect');
             selectEl.innerHTML = '<option value="">-- 加载中，请稍候 --</option>';
-            
+
             try {
                 const jsonText = await fetchWithAutoMirror(
                     'https://raw.githubusercontent.com/cmliu/cmliu/main/SUBAPI.json',
                     'SUBAPI 列表'
                 );
-                
+
                 const apiList = JSON.parse(jsonText);
-                
+
                 // 清空选项
                 selectEl.innerHTML = '';
-                
+
                 // 添加 API 列表的选项
                 apiList.forEach(item => {
                     const option = document.createElement('option');
@@ -9491,13 +9492,13 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                     option.textContent = item.label;
                     selectEl.appendChild(option);
                 });
-                
+
                 // 添加自定义选项
                 const customOption = document.createElement('option');
                 customOption.value = 'custom';
                 customOption.textContent = '🔧 自定义';
                 selectEl.appendChild(customOption);
-                
+
                 // 尝试匹配当前值（大小写不敏感比较）
                 if (currentValue && currentValue.trim()) {
                     const currentValueLower = currentValue.trim().toLowerCase();
@@ -9538,7 +9539,7 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
             const selectEl = document.getElementById('subAPISelect');
             const customInputGroup = document.getElementById('customSubAPIInputGroup');
             const testInput = document.getElementById('testSubAPIInput');
-            
+
             if (selectEl.value === 'custom') {
                 customInputGroup.style.display = 'block';
                 testInput.focus();
@@ -9764,7 +9765,7 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
         async function testSubAPI() {
             let input;
             const selectEl = document.getElementById('subAPISelect');
-            
+
             if (selectEl.value === 'custom' || !selectEl.value) {
                 // 如果是自定义或未选择，从输入框获取
                 input = document.getElementById('testSubAPIInput').value.trim();
@@ -9773,7 +9774,7 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                 input = selectEl.value.trim();
                 document.getElementById('testSubAPIInput').value = input;
             }
-            
+
             if (!input) {
                 showStatus('请输入地址', 'error');
                 return;
