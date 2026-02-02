@@ -8981,11 +8981,41 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                     statusEl.style.padding = '16px';
                     statusEl.style.borderRadius = '8px';
                     statusEl.innerHTML = `
-                        <div style="line-height: 1.8;">
-                            <div style="margin-bottom: 8px;">✅ <strong>代理有效</strong></div>
-                            <div style="margin-bottom: 8px;">📍 落地IP: <span style="cursor: pointer; text-decoration: underline; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;" onclick="showIpDetailForProxy('${ip}')" title="点击查看IP详情">${ip} <span style="font-size: 16px;">🔍</span></span></div>
-                            <div style="margin-bottom: 8px;">🌍 落地国家: <strong>${loc}</strong></div>
-                            <div>⏱️ 响应时间: <strong>${responseTimeDisplay}</strong></div>
+                        <div style="display: flex; flex-direction: column; gap: 10px; font-family: 'Inter', system-ui, sans-serif;">
+                            <!-- 顶部标题栏 -->
+                            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 8px; margin-bottom: 2px;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <div style="width: 8px; height: 8px; background: #fff; border-radius: 50%; box-shadow: 0 0 8px #fff; animation: pulse 2s infinite;"></div>
+                                    <span style="font-weight: 700; font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; color: #fff;">Connection Secured</span>
+                                </div>
+                                <span style="font-size: 10px; opacity: 0.7; font-family: 'Fira Code', monospace; color: #fff;">STATUS: 200 OK</span>
+                            </div>
+                            
+                            <!-- 信息网格 -->
+                            <div style="display: grid; grid-template-columns: 0.4fr 1.2fr; gap: 8px;">
+                                <div style="background: rgba(0,0,0,0.15); padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); min-width: 0; max-width: 100px;">
+                                    <div style="font-size: 10px; opacity: 0.7; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; color: #fff;">区域 (Region)</div>
+                                    <div style="font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff;" title="${loc}">${loc}</div>
+                                </div>
+                                <div style="background: rgba(0,0,0,0.15); padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); min-width: 0;">
+                                    <div style="font-size: 10px; opacity: 0.7; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; color: #fff;">落地地址 (IP)</div>
+                                    <div style="font-family: 'Fira Code', monospace; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px; color: #fff; text-decoration: underline; min-width: 0;" onclick="showIpDetailForProxy('${ip}')">
+                                        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${ip}">${ip}</span>
+                                        <span style="font-size: 12px; opacity: 0.8; flex-shrink: 0;">🔍</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 底部延迟栏 -->
+                            <div style="background: rgba(255,255,255,0.1); padding: 8px 12px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid #fff;">
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span style="font-size: 14px;">⏱️</span>
+                                    <span style="font-size: 11px; font-weight: 500; opacity: 0.9; color: #fff;">响应延迟</span>
+                                </div>
+                                <div style="font-family: 'Orbitron', sans-serif; font-size: 16px; font-weight: 800; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.3);">
+                                    ${responseTimeDisplay}
+                                </div>
+                            </div>
                         </div>
                     `;
 
