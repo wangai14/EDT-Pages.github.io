@@ -12976,9 +12976,25 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                 const dataList = window.proxyIPListData || [];
                 const proxyData = dataList.find(p => p.ip === ip);
                 const emoji = proxyData?.country_emoji || '🌐';
+                
+                // 构建 title 信息
+                let titleText = '';
+                if (proxyData) {
+                    const city = proxyData.city || '未知';
+                    const country = proxyData.country || '未知';
+                    const countryName = proxyData.country_cn || '未知';
+                    const clientIp = proxyData.clientIp || ip;
+                    const asn = proxyData.asn || '未知';
+                    const asOrganization = proxyData.asOrganization || '未知';
+                    
+                    titleText = `${city}\n国家: [${country}]${countryName}\n落地IP: ${clientIp}\nASN: ${asn}\n运营商: ${asOrganization}`;
+                }
 
                 const tag = document.createElement('div');
                 tag.style.cssText = 'background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 4px 10px; border-radius: 9999px; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500;';
+                if (titleText) {
+                    tag.title = titleText;
+                }
                 tag.innerHTML = `
                     <span>${emoji} ${ip}</span>
                     <span onclick="removeSelectedProxyIP('${ip}')" style="cursor: pointer; font-weight: bold; font-size: 16px;">×</span>
