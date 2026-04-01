@@ -2001,6 +2001,9 @@
             --input-border: #e5e7eb;
             --overlay-bg: rgba(255, 255, 255, 0.7);
             --blur-overlay: rgba(0, 0, 0, 0.3);
+            --lowperf-bg-start: #f5f7fb;
+            --lowperf-bg-end: #eef2f7;
+            --lowperf-overlay: rgba(255, 255, 255, 0.14);
             --latency-49: #4CAF50;
             --latency-149: #83DA00;
             --latency-299: #f58722;
@@ -2018,7 +2021,10 @@
             --input-bg: #2a2a2a;
             --input-border: #444444;
             --overlay-bg: rgba(32, 32, 32, 0.7);
-            --blur-overlay: rgba(0, 0, 0, 0.8)
+            --blur-overlay: rgba(0, 0, 0, 0.8);
+            --lowperf-bg-start: #0f172a;
+            --lowperf-bg-end: #1f2937;
+            --lowperf-overlay: rgba(15, 23, 42, 0.45);
         }
 
         html.dark-mode body {
@@ -6228,13 +6234,58 @@
             background: rgba(255, 255, 255, 0.03);
             border-right-color: var(--border-color);
         }
+
+        /* 低性能模式（自动触发）：禁用高开销视觉效果，优化无硬件加速场景 */
+        html.low-performance-mode #background-iframe {
+            display: none !important;
+        }
+
+        html.low-performance-mode #blur-overlay {
+            display: block !important;
+            opacity: 1 !important;
+            animation: none !important;
+            background: var(--blur-overlay) !important;
+            -webkit-backdrop-filter: none !important;
+            backdrop-filter: none !important;
+        }
+
+        html.low-performance-mode body {
+            background: linear-gradient(135deg, var(--lowperf-bg-start) 0%, var(--lowperf-bg-end) 100%) !important;
+        }
+
+        html.low-performance-mode .card-container,
+        html.low-performance-mode .header,
+        html.low-performance-mode .module,
+        html.low-performance-mode .modal,
+        html.low-performance-mode .latency-card,
+        html.low-performance-mode .proxy-map-container,
+        html.low-performance-mode #uuidSnippetModal .modal,
+        html.low-performance-mode .uuid-snippet-stage,
+        html.low-performance-mode #uuidSnippetDisplay {
+            -webkit-backdrop-filter: none !important;
+            backdrop-filter: none !important;
+            filter: none !important;
+        }
+
+        html.low-performance-mode * {
+            animation: none !important;
+        }
+
+        html.low-performance-mode .header,
+        html.low-performance-mode .module,
+        html.low-performance-mode .modal,
+        html.low-performance-mode .latency-card,
+        html.low-performance-mode .social-link,
+        html.low-performance-mode .btn {
+            box-shadow: none !important;
+        }
     </style>
 
 </head>
 
 <body>
     <!-- 背景内容 -->
-    <iframe id="background-iframe" src="/" title="背景内容"></iframe>
+    <iframe id="background-iframe" src="about:blank" data-src="/" loading="lazy" title="背景内容"></iframe>
 
     <!-- 毛玻璃效果遮盖层 -->
     <div id="blur-overlay"></div>
@@ -8241,6 +8292,199 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
         let modifiedSections = new Set();
         let subConfigData = null;
         let hasMultipleHosts = false; // 标记是否存在多个 HOSTS
+        let isLowPerformanceMode = false;
+        const LOW_PERF_STORAGE_KEY = 'adminLowPerformanceMode';
+        let performanceRecheckScheduled = false;
+
+        function parseForcedLowPerformanceMode() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const lite = params.get('lite');
+                if (lite === '1' || lite === 'true') {
+                    localStorage.setItem(LOW_PERF_STORAGE_KEY, '1');
+                    return true;
+                }
+                if (lite === '0' || lite === 'false') {
+                    localStorage.setItem(LOW_PERF_STORAGE_KEY, '0');
+                    return false;
+                }
+            } catch (_) {
+                // ignore URL parse errors
+            }
+
+            const saved = localStorage.getItem(LOW_PERF_STORAGE_KEY);
+            if (saved === '1') return true;
+            if (saved === '0') return false;
+            return null;
+        }
+
+        function enableLowPerformanceMode(reason) {
+            if (isLowPerformanceMode) return;
+            isLowPerformanceMode = true;
+            document.documentElement.classList.add('low-performance-mode');
+            console.info(`[perf] Low performance mode enabled: ${reason}`);
+        }
+
+        function initBackgroundIframe() {
+            const iframe = document.getElementById('background-iframe');
+            if (!iframe) return;
+
+            if (isLowPerformanceMode) {
+                iframe.setAttribute('src', 'about:blank');
+                return;
+            }
+
+            const targetSrc = iframe.getAttribute('data-src') || '/';
+            if (iframe.getAttribute('src') !== targetSrc) {
+                iframe.setAttribute('src', targetSrc);
+            }
+        }
+
+        function measureAverageFrameTime(sampleCount = 18, timeoutMs = 1500) {
+            return new Promise((resolve) => {
+                if (!window.requestAnimationFrame) {
+                    resolve(16.7);
+                    return;
+                }
+
+                let lastTime = 0;
+                let frameCount = 0;
+                let totalDelta = 0;
+                let rafId = 0;
+                let finished = false;
+
+                const finish = (value) => {
+                    if (finished) return;
+                    finished = true;
+                    if (rafId) cancelAnimationFrame(rafId);
+                    clearTimeout(timeoutId);
+                    resolve(value);
+                };
+
+                const step = (now) => {
+                    if (lastTime > 0) {
+                        totalDelta += now - lastTime;
+                    }
+                    lastTime = now;
+                    frameCount += 1;
+
+                    if (frameCount >= sampleCount) {
+                        const denominator = Math.max(1, frameCount - 1);
+                        finish(totalDelta / denominator);
+                        return;
+                    }
+
+                    rafId = requestAnimationFrame(step);
+                };
+
+                const timeoutId = setTimeout(() => finish(16.7), timeoutMs);
+                rafId = requestAnimationFrame(step);
+            });
+        }
+
+        function detectSoftwareRenderer() {
+            try {
+                const canvas = document.createElement('canvas');
+                const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+                if (!gl) {
+                    return { isSoftware: true, reason: 'webgl-unavailable' };
+                }
+
+                let renderer = '';
+                let vendor = '';
+                const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+
+                if (debugInfo) {
+                    renderer = String(gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || '');
+                    vendor = String(gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) || '');
+                } else {
+                    renderer = String(gl.getParameter(gl.RENDERER) || '');
+                    vendor = String(gl.getParameter(gl.VENDOR) || '');
+                }
+
+                const renderInfo = `${renderer} ${vendor}`.toLowerCase();
+                const softwareTokens = [
+                    'swiftshader',
+                    'software',
+                    'llvmpipe',
+                    'softpipe',
+                    'microsoft basic render',
+                    'mesa offscreen',
+                    'gdi generic',
+                    'rasterizer'
+                ];
+
+                const isSoftware = softwareTokens.some(token => renderInfo.includes(token));
+                return {
+                    isSoftware,
+                    reason: isSoftware ? `software-renderer:${renderer || vendor || 'unknown'}` : 'hardware-renderer'
+                };
+            } catch (_) {
+                return { isSoftware: false, reason: 'renderer-detect-error' };
+            }
+        }
+
+        function schedulePerformanceRecheck() {
+            if (performanceRecheckScheduled || isLowPerformanceMode) return;
+            performanceRecheckScheduled = true;
+
+            const runRecheck = async () => {
+                if (isLowPerformanceMode) return;
+                const avgFrameTime = await measureAverageFrameTime(30, 2600);
+                if (avgFrameTime > 20) {
+                    enableLowPerformanceMode(`post-load-frame-time=${avgFrameTime.toFixed(1)}ms`);
+                }
+                initBackgroundIframe();
+            };
+
+            const launch = () => {
+                setTimeout(() => {
+                    runRecheck().catch(err => console.warn('Performance recheck failed:', err));
+                }, 900);
+            };
+
+            if (document.readyState === 'complete') {
+                launch();
+            } else {
+                window.addEventListener('load', launch, { once: true });
+            }
+        }
+
+        async function initializePerformanceMode() {
+            const forcedMode = parseForcedLowPerformanceMode();
+            if (forcedMode !== null) {
+                if (forcedMode) {
+                    enableLowPerformanceMode('manual');
+                }
+                initBackgroundIframe();
+                return;
+            }
+
+            const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const cpuCores = Number(navigator.hardwareConcurrency || 0);
+            const memoryGB = Number(navigator.deviceMemory || 0);
+            const rendererProbe = detectSoftwareRenderer();
+
+            if (prefersReducedMotion || (cpuCores > 0 && cpuCores <= 4) || (memoryGB > 0 && memoryGB <= 4)) {
+                enableLowPerformanceMode('device-hints');
+                initBackgroundIframe();
+                return;
+            }
+
+            if (rendererProbe.isSoftware) {
+                enableLowPerformanceMode(rendererProbe.reason);
+                initBackgroundIframe();
+                return;
+            }
+
+            const avgFrameTime = await measureAverageFrameTime(22, 1800);
+            if (avgFrameTime > 22) {
+                enableLowPerformanceMode(`startup-frame-time=${avgFrameTime.toFixed(1)}ms`);
+            }
+
+            initBackgroundIframe();
+            schedulePerformanceRecheck();
+        }
 
         // 延迟测试配置
         const latencyTestConfig = {
@@ -8488,7 +8732,14 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                 valueElement.style.color = avgColor;
 
                 // 如果数值变化较小，直接显示
-                if (Math.abs(siteState.current - targetValue) < 2) {
+                if (isLowPerformanceMode) {
+                    if (siteState.timer) {
+                        clearInterval(siteState.timer);
+                        siteState.timer = null;
+                    }
+                    siteState.current = targetValue;
+                    valueElement.innerHTML = `${targetValue}<span class="unit">ms</span>`;
+                } else if (Math.abs(siteState.current - targetValue) < 2) {
                     siteState.current = targetValue;
                     valueElement.innerHTML = `${targetValue}<span class="unit">ms</span>`;
                 } else {
@@ -8641,10 +8892,11 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
         // 返回顶部
         function scrollToTop() {
             const pageWrapper = document.querySelector('.page-wrapper');
+            const behavior = isLowPerformanceMode ? 'auto' : 'smooth';
             if (pageWrapper) {
-                pageWrapper.scrollTo({ top: 0, behavior: 'smooth' });
+                pageWrapper.scrollTo({ top: 0, behavior });
             } else {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                window.scrollTo({ top: 0, behavior });
             }
         }
 
@@ -11145,6 +11397,13 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
             }
 
             const currentToken = uuidSnippetDisplayToken;
+            if (isLowPerformanceMode) {
+                setUUIDSnippetProgress(45);
+                if (preview) {
+                    preview.textContent = 'Low performance mode: generating dedicated Snippet.js...';
+                }
+                return currentToken;
+            }
             let frameIndex = 1;
             uuidSnippetDisplayPreviewTimer = setInterval(() => {
                 if (currentToken !== uuidSnippetDisplayToken) {
@@ -11196,6 +11455,15 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
             setUUIDSnippetDisplayStatus('源码晶格重组完成', '正在解除视觉掩码并写入真实 Snippet.js', 'reveal');
 
             const previewSource = extractUUIDSnippetPreviewSource(displayScript);
+            if (isLowPerformanceMode) {
+                if (preview) {
+                    preview.textContent = previewSource;
+                }
+                setUUIDSnippetProgress(100);
+                setUUIDSnippetStageState('ready');
+                setUUIDSnippetCopyButtonEnabled(true);
+                return;
+            }
             const revealStart = performance.now();
             const revealDuration = 1650;
 
@@ -11671,12 +11939,14 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                     copyNodeUUIDValue(nodeUUIDInput);
                 }
 
-                if (uuidEasterClickCount >= UUID_EASTER_HINT_START && uuidEasterClickCount < targetCount) {
+                if (!isLowPerformanceMode && uuidEasterClickCount >= UUID_EASTER_HINT_START && uuidEasterClickCount < targetCount) {
                     showNodeUUIDGiftFountain(clientX, clientY, nodeUUIDInput);
                 }
 
                 if (uuidEasterClickCount >= targetCount) {
-                    showNodeUUIDRocketFirework(clientX, clientY, nodeUUIDInput);
+                    if (!isLowPerformanceMode) {
+                        showNodeUUIDRocketFirework(clientX, clientY, nodeUUIDInput);
+                    }
                     openUUIDSnippetModal();
                     resetNodeUUIDEasterCount();
                     stopNodeUUIDLongPress();
@@ -14758,6 +15028,7 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
         // 初始化
         initializeTheme();
         window.addEventListener('DOMContentLoaded', () => {
+            initializePerformanceMode().catch(err => console.warn('Performance mode initialization failed:', err));
             loadConfig();
             initUserMode();
             initLineEditor('customIPs');
@@ -15931,9 +16202,13 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
             const point = map.project([lat, lng], 4).subtract([0, offsetY]);
             const offsetCenter = map.unproject(point, 4);
 
-            map.flyTo(offsetCenter, 4, {
-                duration: 1.5
-            });
+            if (isLowPerformanceMode) {
+                map.setView(offsetCenter, 4, { animate: false });
+            } else {
+                map.flyTo(offsetCenter, 4, {
+                    duration: 1.5
+                });
+            }
 
             // 添加或更新 Popup
             const isDark = document.documentElement.classList.contains('dark-mode');
