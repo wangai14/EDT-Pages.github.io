@@ -7172,11 +7172,10 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                         </select>
                     </div>
 
-                    <div class="form-group" id="ssTLSGroup" style="display: none;"
-                        title="关闭 TLS 后，传输层不再由 TLS 封装，但数据负载仍由 Shadowsocks AEAD（aes-128-gcm / aes-256-gcm）加密。">
+                    <div class="form-group" id="ssTLSGroup" style="display: none;" title="传输层TLS加密">
                         <label for="ssTLS">TLS</label>
                         <select id="ssTLS" onchange="handleSSTLSChange(event)">
-                            <option value="true">启用</option>
+                            <option value="true">启用（开启TLS，速度不会比VLESS/Trojan更快，因为Shadowsocks自带AEAD加密）</option>
                             <option value="false">关闭</option>
                         </select>
                     </div>
@@ -8799,15 +8798,23 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
             <div style="text-align: center; padding: 20px 0;">
                 <h2 style="color: #f44336; margin: 0 0 16px 0; font-size: 22px; font-weight: 700;">⚠️ 关闭 TLS传输层加密</h2>
                 <p style="margin: 0 0 12px 0; font-size: 14px; line-height: 1.6; text-align: left;">
-                    你正在准备关闭 <strong>Shadowsocks</strong> 的 TLS 传输层加密。为了避免节点失联，请先确认部署环境满足要求。
+                    🔒 你正在准备关闭 <strong>Shadowsocks</strong> 的 TLS 传输层加密。为了避免节点失联，请先确认部署环境满足要求。
                 </p>
                 <div class="sstls-modal-requirements">
-                    <strong>关闭 TLS 前，请确认以下三点：</strong>
+                    <strong>☁️ 关闭 TLS 前，请确认以下三点：</strong>
                     <ol>
                         <li>项目必须部署在 <strong>Workers</strong>（不是 Pages）。</li>
                         <li>
                             在 Cloudflare 中关闭 “<strong>始终使用 HTTPS</strong>”
                             <div class="grpc-modal-path sstls-modal-path">
+                                <svg class="grpc-modal-path-icon" role="presentation" xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 16 16" aria-hidden="true" focusable="false" style="opacity: 0.55;">
+                                    <path
+                                        d="M12.39 6.902h-1.193V4.705a3.197 3.197 0 10-6.394 0v2.197H3.61l-.5.5V14l.5.5h8.78l.5-.5V7.402l-.5-.5zM5.803 4.705a2.197 2.197 0 014.394 0v2.197H5.803V4.705zM11.89 13.5H4.11V7.902h7.78V13.5z">
+                                    </path>
+                                    <path d="M8 8.95a.965.965 0 00-.43 1.83v1.57h.86v-1.57A.965.965 0 008 8.95z">
+                                    </path>
+                                </svg>
                                 <span>SSL/TLS &gt; 边缘证书 &gt; 始终使用 HTTPS &gt; <strong>关闭</strong></span>
                             </div>
                             或 <strong>HOST</strong> 直接使用 <strong>*.workers.dev</strong> 项目分配的域名。
@@ -8819,10 +8826,10 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                     </ol>
                 </div>
                 <div class="sstls-modal-note">
-                    <p class="sstls-modal-note-title">传输与加密说明</p>
-                    <p>关闭 TLS 后，数据将以 HTTP 明文形态传输，不再具备 TLS加密 对链路的封装与伪装能力。</p>
-                    <p>但节点仍由 Shadowsocks AEAD（aes-128-gcm / aes-256-gcm）加密，流量数据本身依旧是加密传输。</p>
-                    <p>总结：最终流量以明文的方式传播加密数据。</p>
+                    <p class="sstls-modal-note-title">📘 传输与加密说明</p>
+                    <p>📡 关闭 TLS 后，数据将以 HTTP 明文形态传输，不再具备 TLS加密 对链路的封装与伪装能力。</p>
+                    <p>🔐 但节点仍由 Shadowsocks AEAD（aes-128-gcm / aes-256-gcm）加密，流量数据本身依旧是加密传输。</p>
+                    <p>✅ 总结：最终流量会以 <strong>明文的方式</strong> 传输 <strong>加密数据</strong>。</p>
                 </div>
             </div>
             <div style="display: flex; gap: 12px; justify-content: center;">
