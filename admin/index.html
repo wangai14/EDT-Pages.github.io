@@ -16661,34 +16661,6 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
             }
 
             cloudFlareActiveIndex = Math.min(Math.max(cloudFlareActiveIndex, 0), cloudFlareEntries.length - 1);
-            const activeIndex = cloudFlareActiveIndex;
-            const standbyIndex = activeIndex === 0 ? 1 : 0;
-
-            const activeEntry = cloudFlareEntries[activeIndex];
-            const standbyEntry = cloudFlareEntries[standbyIndex];
-
-            const activeFull = getCloudFlareProxyLabel(activeEntry.version, true);
-            const standbyShort = getCloudFlareProxyLabel(standbyEntry.version, false);
-            const activeClass = getCloudFlareProxyClass(activeEntry.version);
-            const standbyClass = getCloudFlareProxyClass(standbyEntry.version);
-
-            if (activeIndex === 0) {
-                subtitleElement.innerHTML = `
-                    <span class="cf-subtitle-token ${activeClass}">${activeFull}</span>
-                    <span class="cf-subtitle-token cf-subtitle-sep"> / </span>
-                    <span class="cf-subtitle-token ${standbyClass} cf-subtitle-switch" data-cf-target-index="${standbyIndex}" role="button" tabindex="0">${standbyShort}</span>
-                `;
-            } else {
-                subtitleElement.innerHTML = `
-                    <span class="cf-subtitle-token ${standbyClass} cf-subtitle-switch" data-cf-target-index="${standbyIndex}" role="button" tabindex="0">${standbyShort}</span>
-                    <span class="cf-subtitle-token cf-subtitle-sep"> / </span>
-                    <span class="cf-subtitle-token ${activeClass}">${activeFull}</span>
-                `;
-            }
-
-            const switchElement = subtitleElement.querySelector('.cf-subtitle-switch');
-            if (!switchElement) return;
-
             const onSwitch = event => {
                 event.preventDefault();
                 event.stopPropagation();
@@ -16701,11 +16673,27 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                 renderCloudFlareActiveEntry();
             };
 
-            switchElement.title = '点击切换出口IP';
-            switchElement.addEventListener('click', onSwitch);
-            switchElement.addEventListener('keydown', event => {
-                if (event.key !== 'Enter' && event.key !== ' ') return;
-                onSwitch(event);
+            const subtitleHtml = cloudFlareEntries.map((entry, index) => {
+                const entryClass = getCloudFlareProxyClass(entry.version);
+                const isActive = index === cloudFlareActiveIndex;
+                const label = getCloudFlareProxyLabel(entry.version, isActive);
+                if (isActive) {
+                    return `<span class="cf-subtitle-token ${entryClass}">${label}</span>`;
+                }
+
+                return `<span class="cf-subtitle-token ${entryClass} cf-subtitle-switch" data-cf-target-index="${index}" role="button" tabindex="0">${label}</span>`;
+            }).join('<span class="cf-subtitle-token cf-subtitle-sep"> / </span>');
+
+            subtitleElement.innerHTML = subtitleHtml;
+
+            const switchElements = subtitleElement.querySelectorAll('.cf-subtitle-switch');
+            switchElements.forEach(switchElement => {
+                switchElement.title = '点击切换出口IP';
+                switchElement.addEventListener('click', onSwitch);
+                switchElement.addEventListener('keydown', event => {
+                    if (event.key !== 'Enter' && event.key !== ' ') return;
+                    onSwitch(event);
+                });
             });
         }
 
