@@ -16554,6 +16554,10 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
             const statusElement = document.querySelector('#status-twitter');
             const titleElement = statusElement ? statusElement.parentElement : null;
             const tipElement = document.getElementById('twitter-tip');
+            const isInvalidOutsideEntryIp = ip => {
+                const candidate = String(ip || '').trim();
+                return !candidate || candidate === '0.0.0.0';
+            };
 
             const renderTwitterTitle = (subtitle) => {
                 if (!titleElement) return;
@@ -16569,11 +16573,14 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                 {
                     name: '谷歌(Google)',
                     getIp: async () => {
-                        const jsonpTask = createJsonpRequest('https://jsonp-ip.appspot.com/', 'callback', 8000);
+                        const jsonpTask = createJsonpRequest(`https://jsonp-ip.appspot.com/?_t=${Date.now()}`, 'callback', 8000);
                         try {
                             const payload = await jsonpTask.promise;
                             const requestIp = String(payload?.ip || '').trim();
-                            if (!requestIp) {
+                            if (isInvalidOutsideEntryIp(requestIp)) {
+                                if (requestIp === '0.0.0.0') {
+                                    throw new Error('google jsonp returned invalid ip 0.0.0.0');
+                                }
                                 throw new Error('google jsonp missing ip');
                             }
                             return requestIp;
@@ -16595,7 +16602,10 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                         const text = await response.text();
                         const ipLine = text.split('\n').find(line => line.startsWith('ip='));
                         const requestIp = String(ipLine ? ipLine.slice(3) : '').trim();
-                        if (!requestIp) {
+                        if (isInvalidOutsideEntryIp(requestIp)) {
+                            if (requestIp === '0.0.0.0') {
+                                throw new Error('x trace returned invalid ip 0.0.0.0');
+                            }
                             throw new Error('x trace missing ip');
                         }
                         return requestIp;
@@ -16608,6 +16618,9 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                 for (const source of testSources) {
                     try {
                         const requestIp = await source.getIp();
+                        if (isInvalidOutsideEntryIp(requestIp)) {
+                            throw new Error(`${source.name} returned invalid ip`);
+                        }
                         fastestSuccess = {
                             providerName: source.name,
                             requestIp
