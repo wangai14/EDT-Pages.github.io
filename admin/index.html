@@ -10502,6 +10502,9 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                 updateGrpcModeVisibility();
                 updateTransportGrpcTooltipVisibility(false);
             }
+
+            // 协议/TLS 变化会影响 ECH 可用性
+            updateECHOptionState();
         }
 
         // 处理浏览器指纹变化，联动ECH选项
@@ -10532,18 +10535,26 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
 
         // 更新ECH选项的状态（禁用/启用）
         function updateECHOptionState() {
-            const fingerprint = document.getElementById('fingerprint').value;
+            const fingerprint = document.getElementById('fingerprint')?.value;
             const enableECHCheckbox = document.getElementById('enableECH');
+            const protocol = document.getElementById('protocol')?.value;
+            const ssTLS = document.getElementById('ssTLS')?.value;
 
             // 支持ECH的指纹类型
             const supportECH = ['chrome', 'firefox'];
+            const isFingerprintSupported = supportECH.includes(fingerprint);
+            const isSSWithoutTLS = protocol === 'ss' && ssTLS === 'false';
+            const shouldDisableECH = !isFingerprintSupported || isSSWithoutTLS;
 
             if (enableECHCheckbox) {
-                // 当指纹不支持ECH时，自动取消勾选
-                if (!supportECH.includes(fingerprint) && enableECHCheckbox.checked) {
+                // 当不满足条件时，自动取消勾选
+                if (shouldDisableECH && enableECHCheckbox.checked) {
                     enableECHCheckbox.checked = false;
                     markModified('ech');
                 }
+
+                // SS + TLS关闭 或 指纹不支持时，ECH启用不可编辑
+                enableECHCheckbox.disabled = shouldDisableECH;
             }
         }
 
