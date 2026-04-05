@@ -6105,9 +6105,6 @@
             opacity: 1;
         }
 
-        .cf-subtitle-token {
-        }
-
         .cf-subtitle-v4 {
             color: #22c55e;
         }
@@ -16656,7 +16653,7 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
 
             if (cloudFlareEntries.length === 1) {
                 const entry = cloudFlareEntries[0];
-                subtitleElement.innerHTML = `<span class="cf-subtitle-token ${getCloudFlareProxyClass(entry.version)}">${getCloudFlareProxyLabel(entry.version, true)}</span>`;
+                subtitleElement.innerHTML = `<span class="${getCloudFlareProxyClass(entry.version)}">${getCloudFlareProxyLabel(entry.version, true)}</span>`;
                 return;
             }
 
@@ -16678,11 +16675,11 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                 const isActive = index === cloudFlareActiveIndex;
                 const label = getCloudFlareProxyLabel(entry.version, isActive);
                 if (isActive) {
-                    return `<span class="cf-subtitle-token ${entryClass}">${label}</span>`;
+                    return `<span class="${entryClass}">${label}</span>`;
                 }
 
-                return `<span class="cf-subtitle-token ${entryClass} cf-subtitle-switch" data-cf-target-index="${index}" role="button" tabindex="0">${label}</span>`;
-            }).join('<span class="cf-subtitle-token cf-subtitle-sep"> / </span>');
+                return `<span class="${entryClass} cf-subtitle-switch" data-cf-target-index="${index}" role="button" tabindex="0">${label}</span>`;
+            }).join('<span class="cf-subtitle-sep"> / </span>');
 
             subtitleElement.innerHTML = subtitleHtml;
 
