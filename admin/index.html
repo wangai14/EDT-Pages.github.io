@@ -6184,6 +6184,10 @@
             padding-right: 20px;
         }
 
+        #cf-ip.clickable {
+            padding-right: 20px;
+        }
+
         .ip-text.clickable::after {
             content: '';
             position: absolute;
@@ -6200,6 +6204,12 @@
             transform: translateY(-50%);
         }
 
+        #cf-ip.clickable::after {
+            width: 16px;
+            height: 16px;
+            background-size: 16px 16px;
+        }
+
         .ip-text.clickable:hover::after {
             opacity: 1;
             transform: translateY(-50%) scale(1.08);
@@ -6213,6 +6223,13 @@
             opacity: 1;
             transform: translateY(-50%);
             animation: ipIconSpin 0.9s linear infinite;
+        }
+
+        /* CloudFlare 卡片仅在加载时恢复为默认转圈大小 */
+        #cf-ip.clickable.is-loading::after {
+            width: 13px;
+            height: 13px;
+            background-size: 13px 13px;
         }
 
         html.dark-mode .ip-text.clickable.is-loading::after {
@@ -16803,6 +16820,7 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
             return [
                 `人机指数: ${scoreText}`,
                 `风险等级: ${meta.level}`,
+                '数据来源: Cloudflare',
                 '',
                 '判定说明:',
                 '分数越高越接近真人，分数越低越接近机器人/爬虫。',
