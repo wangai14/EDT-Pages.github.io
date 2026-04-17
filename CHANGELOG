@@ -2,14 +2,15 @@
 
 ### Debug
 
-- 同步上游项目更新，修复已知问题。[参考链接](https://t.me/Enkelte_notif/824)
+- 同步上游项目更新，修复 **HTTPS 代理** 已知问题。[参考链接](https://t.me/Enkelte_notif/824)
+- 修复已知问题 [#1117](https://github.com/cmliu/edgetunnel/issues/1117) [#1119](https://github.com/cmliu/edgetunnel/issues/1119) [#1120](https://github.com/cmliu/edgetunnel/issues/1120)
 
 ## [2.1.20260416044724] - 2026-04-16 04:47:24
 
 ### New
 
 - Trojan 协议现已支持通过 UDP Over TCP 方式进行 DNS 查询。
-- 反向代理模式中新增 **HTTPS 代理**功能支持。[参考链接](https://t.me/Enkelte_notif/821)
+- 反向代理模式中新增 **HTTPS 代理** 功能支持。[参考链接](https://t.me/Enkelte_notif/821)
 
 ## [2.1.20260410060317] - 2026-04-10 06:03:17
 
