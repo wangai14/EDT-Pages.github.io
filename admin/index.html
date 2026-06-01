@@ -3015,7 +3015,23 @@
         }
 
         html.dark-mode .module-title .collapse-icon {
-            fill: var(--text-secondary)
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(255, 255, 255, 0.12);
+            fill: #a0a0a0;
+        }
+
+        html.dark-mode .module-title:not(.non-collapsible):hover .collapse-icon {
+            background: rgba(124, 58, 237, 0.1);
+            border-color: rgba(167, 139, 250, 0.24);
+            fill: #c4b5fd;
+        }
+
+        html.dark-mode .module.collapsed .collapse-icon,
+        html.dark-mode .module.network-detail-collapsed .collapse-icon {
+            background: rgba(124, 58, 237, 0.14);
+            border-color: rgba(167, 139, 250, 0.3);
+            fill: #c4b5fd;
+            box-shadow: 0 2px 6px -4px rgba(124, 58, 237, 0.8);
         }
 
         html.dark-mode .footer-hint {
@@ -3187,15 +3203,33 @@
         }
 
         .module-title .collapse-icon {
-            width: 24px;
-            height: 24px;
-            transition: none;
-            fill: #666;
+            margin-left: auto;
+            width: 18px;
+            height: 18px;
+            padding: 5px;
+            box-sizing: content-box;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background: #fff;
+            fill: #6b7280;
             flex-shrink: 0;
+            transform: rotate(0deg);
+            transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, fill 0.2s ease, box-shadow 0.2s ease;
         }
 
-        .module.collapsed .collapse-icon {
-            transform: rotate(90deg)
+        .module-title:not(.non-collapsible):hover .collapse-icon {
+            background: #f9fafb;
+            border-color: #d1d5db;
+            fill: #374151;
+        }
+
+        .module.collapsed .collapse-icon,
+        .module.network-detail-collapsed .collapse-icon {
+            transform: rotate(90deg);
+            background: #fff7ed;
+            border-color: #fed7aa;
+            fill: #ea580c;
+            box-shadow: 0 2px 6px -4px rgba(234, 88, 12, 0.7);
         }
 
         .module>.module-content {
@@ -3578,6 +3612,16 @@
         @media(max-width:480px) {
             .card-container {
                 padding: 15px
+            }
+
+            .module-title {
+                gap: 8px;
+            }
+
+            .module-title .collapse-icon {
+                width: 18px;
+                height: 18px;
+                padding: 4px;
             }
 
             .ech-tabs::-webkit-scrollbar {
@@ -7918,7 +7962,7 @@
             </div>
 
             <!-- 网络信息模块 -->
-            <div class="module advanced-module">
+            <div class="module advanced-module network-detail-collapsed">
                 <div class="module-title" onclick="toggleNetworkModule(this)">
                     🌍 当前网络信息
                     <svg class="collapse-icon" viewBox="0 0 24 24" style="transform: rotate(90deg);">
@@ -12977,6 +13021,7 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
 
         // 网络信息模块的折叠/展开函数
         function toggleNetworkModule(titleEl) {
+            const module = titleEl.parentElement;
             const content = document.getElementById('network-module-content');
             const icon = titleEl.querySelector('.collapse-icon');
 
@@ -12984,6 +13029,7 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
 
             if (isHidden) {
                 // Expand - show latency tests and start testing
+                module.classList.remove('network-detail-collapsed');
                 animateSectionHeight(content, true);
 
                 if (icon) {
@@ -12994,6 +13040,7 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                 startLatencyTest();
             } else {
                 // Collapse - hide latency tests
+                module.classList.add('network-detail-collapsed');
                 stopLatencyTest();
                 animateSectionHeight(content, false);
 
