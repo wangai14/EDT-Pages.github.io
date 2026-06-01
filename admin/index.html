@@ -10323,7 +10323,7 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                     els.clearSelectBtn.addEventListener("click", clearSelectedResults);
                     els.saveSelectedBtn.addEventListener("click", saveSelectedResults);
                     els.closeBestCFBtn.addEventListener("click", closeBestCFModule);
-                    els.networkWarningConfirmBtn.addEventListener("click", closeBestCFModule);
+      els.networkWarningConfirmBtn.addEventListener("click", confirmNetworkWarning);
                     document.querySelectorAll("[data-sort]").forEach((button) => {
                         button.addEventListener("click", () => setResultSort(button.dataset.sort));
                     });
@@ -10391,10 +10391,30 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                     if (availableFamilies().length === 0) showNetworkWarning();
                 }
 
-                function showNetworkWarning() {
-                    els.networkWarningOverlay.classList.add("is-visible");
-                    els.networkWarningConfirmBtn.focus();
-                }
+    function showNetworkWarning() {
+      els.networkWarningOverlay.classList.add("is-visible");
+      els.networkWarningConfirmBtn.focus();
+    }
+
+    function confirmNetworkWarning() {
+      if (window.parent && window.parent !== window) {
+        try {
+          window.parent.location.reload();
+          return;
+        } catch (error) {
+          // Fall back to postMessage below when direct parent access is unavailable.
+        }
+
+        try {
+          window.parent.postMessage({ type: "bestcf-force-reload" }, "*");
+          return;
+        } catch (error) {
+          // Ignore and reload the current document as a last resort.
+        }
+      }
+
+      window.location.reload();
+    }
 
                 async function detectStack(family) {
                     const base = DETECT_ENDPOINTS[family];
@@ -19639,6 +19659,8 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                 appendOnlineOptimizeSelections(data.lines);
             } else if (data.type === 'bestcf-close') {
                 closeOnlineOptimizeModal();
+            } else if (data.type === 'bestcf-force-reload') {
+                window.location.reload();
             }
         });
 
