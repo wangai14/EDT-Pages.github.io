@@ -10430,6 +10430,7 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                         ipType: data.ipType || family,
                         country: data.country || "未知",
                         cnIspCode: data.cnIspCode || "",
+                        preferredType: preferredTypeFromCnIspCode(data.cnIspCode),
                         colo: data.colo || "",
                         asn: data.asn || ""
                     };
@@ -10677,7 +10678,8 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                     const latency = Math.max(1, Math.round(performance.now() - started));
                     if (latency > timeout) throw new Error("延迟超过超时时间");
                     const official = isOfficialPreferredIp(data);
-                    const type = official ? "官方优选" : "优选反代";
+                    const responseIpType = data.ipType || "";
+                    const type = official ? officialPreferredType(data) : "优选反代";
                     const country = official ? countryFromColo(data.colo) : (data.country || "未知");
 
                     return {
@@ -10688,7 +10690,7 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                         latency,
                         speedState: "pending",
                         speedMbps: null,
-                        ipType: data.ipType || "",
+                        ipType: responseIpType,
                         responseIp: data.ip || "",
                         colo: data.colo || "",
                         raw: data
@@ -10700,6 +10702,61 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                     const country = String(data.country || "").toUpperCase();
                     const cnIspCode = String(data.cnIspCode || "").toLowerCase();
                     return country === "CN" && cnIspCode !== "other";
+                }
+
+                function officialPreferredType(data) {
+                    const family = officialResultFamily(data);
+                    const info = networkInfoByIpType(family);
+                    if (info && info.preferredType) return info.preferredType;
+
+                    const cnIspCode = normalizeCnIspCode(info && info.cnIspCode) || displayedCnIspCode(family);
+                    return preferredTypeFromCnIspCode(cnIspCode);
+                }
+
+                function preferredTypeFromCnIspCode(cnIspCode) {
+                    const normalizedCode = normalizeCnIspCode(cnIspCode);
+                    const typeMap = {
+                        ct: "电信优选",
+                        cu: "联通优选",
+                        cmcc: "移动优选"
+                    };
+                    return typeMap[normalizedCode] || "官方优选";
+                }
+
+                function officialResultFamily(data) {
+                    if (data && data.ip) {
+                        if (data.ip === state.ipv4) return "ipv4";
+                        if (data.ip === state.ipv6) return "ipv6";
+                    }
+
+                    return String(data && data.ipType ? data.ipType : "").toLowerCase();
+                }
+
+                function networkInfoByIpType(family) {
+                    if (family === "ipv4" || family === "ipv6") {
+                        const direct = state.network[family];
+                        if (direct && String(direct.ipType || "").toLowerCase() === family) return direct;
+
+                        const matched = Object.values(state.network).find((info) =>
+                            info && String(info.ipType || "").toLowerCase() === family
+                        );
+                        if (matched) return matched;
+
+                        return direct || null;
+                    }
+
+                    return null;
+                }
+
+                function normalizeCnIspCode(value) {
+                    return String(value || "").trim().toLowerCase();
+                }
+
+                function displayedCnIspCode(family) {
+                    const tag = family === "ipv4" ? els.ipv4Tag : (family === "ipv6" ? els.ipv6Tag : null);
+                    const text = tag ? String(tag.textContent || "") : "";
+                    const parts = text.split("·");
+                    return normalizeCnIspCode(parts.length > 1 ? parts[1] : "");
                 }
 
                 async function testOptionsConnectivity(url, timeout, run) {
