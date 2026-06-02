@@ -15701,7 +15701,7 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
             if (isCollapsed) {
                 // 检查是否是网络模块，如果是则加载数据
                 if (module.querySelector('.network-cards-container') && !networkInfoLoaded) {
-                    loadNetworkInfo();
+                    scheduleNetworkInfoLoad({ delayMs: 0 });
                 }
 
                 module.classList.remove('collapsed');
@@ -20452,6 +20452,87 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
             { id: 'twitter-country', type: 'location' }
         ];
         const NETWORK_API_TIMEOUT_MS = 6180.3;
+        const NETWORK_BACKGROUND_START_DELAY_MS = 1200;
+        const NETWORK_BACKGROUND_IDLE_TIMEOUT_MS = 2500;
+        const NETWORK_BACKGROUND_TASK_GAP_MS = 420;
+        const NETWORK_BACKGROUND_TASK_TIMEOUT_MS = (NETWORK_API_TIMEOUT_MS * 3) + 1200;
+        let networkInfoScheduled = false;
+        let networkInfoLoadPromise = null;
+
+        function waitForPageComplete() {
+            if (document.readyState === 'complete') {
+                return Promise.resolve();
+            }
+
+            return new Promise(resolve => {
+                window.addEventListener('load', resolve, { once: true });
+            });
+        }
+
+        function waitForBrowserIdle(timeoutMs = NETWORK_BACKGROUND_IDLE_TIMEOUT_MS) {
+            return new Promise(resolve => {
+                if ('requestIdleCallback' in window) {
+                    window.requestIdleCallback(() => resolve(), { timeout: timeoutMs });
+                    return;
+                }
+
+                setTimeout(resolve, 0);
+            });
+        }
+
+        function waitForDelay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function scheduleNetworkInfoLoad(options = {}) {
+            const { delayMs = NETWORK_BACKGROUND_START_DELAY_MS } = options;
+            if (networkInfoLoaded || networkInfoLoadPromise || networkInfoScheduled) {
+                return;
+            }
+
+            networkInfoScheduled = true;
+
+            (async () => {
+                await waitForPageComplete();
+                if (delayMs > 0) {
+                    await waitForDelay(delayMs);
+                }
+                await waitForBrowserIdle();
+                await loadNetworkInfo();
+            })().catch(error => {
+                console.warn('[网络信息] 后台加载调度失败:', error);
+            }).finally(() => {
+                networkInfoScheduled = false;
+            });
+        }
+
+        async function runNetworkInfoBackgroundTask(task, index) {
+            if (index > 0) {
+                await waitForDelay(NETWORK_BACKGROUND_TASK_GAP_MS);
+            }
+
+            await waitForBrowserIdle();
+
+            let watchdogId = null;
+            const watchdog = new Promise((_, reject) => {
+                watchdogId = setTimeout(() => {
+                    reject(new Error(`${task.name} background timeout`));
+                }, NETWORK_BACKGROUND_TASK_TIMEOUT_MS);
+            });
+
+            try {
+                await Promise.race([
+                    Promise.resolve().then(task.run),
+                    watchdog
+                ]);
+            } catch (error) {
+                console.warn(`[网络信息] ${task.name} 后台任务异常:`, error);
+            } finally {
+                if (watchdogId) {
+                    clearTimeout(watchdogId);
+                }
+            }
+        }
 
         async function fetchWithTimeout(url, options = {}, timeoutMs = NETWORK_API_TIMEOUT_MS) {
             const { signal: externalSignal, ...fetchOptions } = options || {};
@@ -20841,7 +20922,69 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
             return `${countryCode} ${asnText} ${asnName}`.trim() || '未知';
         }
 
-        // 获取国内测试数据 (多源并发：HEAD + JSONP，提取IP后查询ipinfo)
+        function createIpProbeRequestTask(sourceConfig) {
+            if (sourceConfig.type === 'jsonp') {
+                const jsonpTask = createJsonpRequest(sourceConfig.url, sourceConfig.callbackParam);
+                return {
+                    cancel: jsonpTask.cancel,
+                    promise: jsonpTask.promise.then(payload => {
+                        const requestIp = String(sourceConfig.extractIp(payload) || '').trim();
+                        if (!requestIp) {
+                            throw new Error(`${sourceConfig.url} missing jsonp ip`);
+                        }
+                        return {
+                            source: sourceConfig.url,
+                            requestIp,
+                            providerName: sourceConfig.name
+                        };
+                    })
+                };
+            }
+
+            const controller = new AbortController();
+            return {
+                cancel: () => controller.abort(),
+                promise: (async () => {
+                    const url = `${sourceConfig.url}${sourceConfig.url.includes('?') ? '&' : '?'}_t=${Date.now()}`;
+                    const response = await fetchWithTimeout(url, {
+                        method: 'HEAD',
+                        cache: 'no-store',
+                        signal: controller.signal
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`${sourceConfig.url} HTTP ${response.status}`);
+                    }
+
+                    const requestIp = String(response.headers.get(sourceConfig.ipHeader) || '').trim();
+                    if (!requestIp) {
+                        throw new Error(`${sourceConfig.url} missing ${sourceConfig.ipHeader}`);
+                    }
+
+                    return {
+                        source: sourceConfig.url,
+                        requestIp,
+                        providerName: sourceConfig.name
+                    };
+                })()
+            };
+        }
+
+        async function raceIpProbeSources(sourceConfigs, label) {
+            if (!sourceConfigs.length) {
+                throw new Error(`${label} has no sources`);
+            }
+
+            const requestTasks = sourceConfigs.map(createIpProbeRequestTask);
+
+            try {
+                return await Promise.any(requestTasks.map(task => task.promise));
+            } finally {
+                requestTasks.forEach(task => task.cancel && task.cancel());
+            }
+        }
+
+        // 获取国内测试数据（HEAD 优先，失败后再用 JSONP 兜底）
         async function fetchIpipData() {
             setStatus('status-ipip', 'loading');
 
@@ -20888,60 +21031,17 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                     extractIp: payload => payload?.content?.localIp
                 }
             ];
-            const requestTasks = testSources.map(sourceConfig => {
-                if (sourceConfig.type === 'jsonp') {
-                    const jsonpTask = createJsonpRequest(sourceConfig.url, sourceConfig.callbackParam);
-                    return {
-                        cancel: jsonpTask.cancel,
-                        promise: jsonpTask.promise.then(payload => {
-                            const requestIp = String(sourceConfig.extractIp(payload) || '').trim();
-                            if (!requestIp) {
-                                throw new Error(`${sourceConfig.url} missing jsonp ip`);
-                            }
-                            return {
-                                source: sourceConfig.url,
-                                requestIp,
-                                providerName: sourceConfig.name
-                            };
-                        })
-                    };
-                }
-
-                const controller = new AbortController();
-                return {
-                    cancel: () => controller.abort(),
-                    promise: (async () => {
-                        const url = `${sourceConfig.url}${sourceConfig.url.includes('?') ? '&' : '?'}_t=${Date.now()}`;
-                        const response = await fetchWithTimeout(url, {
-                            method: 'HEAD',
-                            cache: 'no-store',
-                            signal: controller.signal
-                        });
-
-                        if (!response.ok) {
-                            throw new Error(`${sourceConfig.url} HTTP ${response.status}`);
-                        }
-
-                        const requestIp = String(response.headers.get(sourceConfig.ipHeader) || '').trim();
-                        if (!requestIp) {
-                            throw new Error(`${sourceConfig.url} missing ${sourceConfig.ipHeader}`);
-                        }
-
-                        return {
-                            source: sourceConfig.url,
-                            requestIp,
-                            providerName: sourceConfig.name
-                        };
-                    })()
-                };
-            });
-
+            const headSources = testSources.filter(sourceConfig => sourceConfig.type === 'head');
+            const jsonpSources = testSources.filter(sourceConfig => sourceConfig.type === 'jsonp');
             let fastestSuccess;
             try {
-                fastestSuccess = await Promise.any(requestTasks.map(task => task.promise));
+                try {
+                    fastestSuccess = await raceIpProbeSources(headSources, '国内测试 HEAD');
+                } catch (headError) {
+                    console.warn('[国内测试] HEAD 测试源不可用，后台切换到 JSONP 兜底:', headError);
+                    fastestSuccess = await raceIpProbeSources(jsonpSources, '国内测试 JSONP');
+                }
             } catch (error) {
-                requestTasks.forEach(task => task.cancel && task.cancel());
-
                 setNetworkFieldError('ipip-ip', '加载失败');
                 clearNetworkFieldValue('ipip-country');
                 applyNetworkCardFlag('ipip-country');
@@ -20953,8 +21053,6 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                 console.error('国内测试 所有测试源都失败:', error);
                 return;
             }
-
-            requestTasks.forEach(task => task.cancel && task.cancel());
 
             const fallbackIp = String(fastestSuccess.requestIp || '未知').trim() || '未知';
             setNetworkFieldValue('ipip-ip', fallbackIp, 'ip');
@@ -20994,27 +21092,44 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                     parse: d => ({ ip: d.ip, loc: `${d.location?.country_code || '未知'} AS${d.asn?.asn || ''} ${d.asn?.org || ''}`.trim() })
                 },
                 {
-                    url: `https://api.cmliussss.net/api/ipinfo?_t=${Date.now()}`,
+                    url: `https://api.cmliussss.net/api/ipinfo`,
                     parse: d => ({ ip: d.ip, loc: `${d.country_code || '未知'} ${d.asn || ''} ${d.as_name || ''}`.trim() })
                 }
             ];
 
-            for (const api of apis) {
-                try {
-                    const response = await fetchWithTimeout(api.url);
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    const { ip, loc } = api.parse(await response.json());
-                    const edgeIp = ip || '未知';
+            const requestTasks = apis.map(api => {
+                const controller = new AbortController();
+                return {
+                    cancel: () => controller.abort(),
+                    promise: (async () => {
+                        const url = `${api.url}${api.url.includes('?') ? '&' : '?'}_t=${Date.now()}`;
+                        const response = await fetchWithTimeout(url, {
+                            cache: 'no-store',
+                            signal: controller.signal
+                        });
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        const { ip, loc } = api.parse(await response.json());
+                        const edgeIp = ip || '未知';
 
-                    setNetworkFieldValue('overseas-ip', edgeIp, 'ip');
-                    setNetworkFieldValue('overseas-country', loc || '未知', 'location');
-                    applyNetworkCardFlag('overseas-country');
-                    setStatus('status-overseas', 'success');
-                    console.log(`[国外测试] 成功: IP=${edgeIp}, 位置=${loc}`);
-                    return;
-                } catch (error) {
-                    console.log(`[国外测试] ${api.url} 失败: ${error.message}`);
-                }
+                        return { edgeIp, loc, url: api.url };
+                    })().catch(error => {
+                        console.log(`[国外测试] ${api.url} 失败: ${error.message}`);
+                        throw error;
+                    })
+                };
+            });
+
+            try {
+                const { edgeIp, loc } = await Promise.any(requestTasks.map(task => task.promise));
+                requestTasks.forEach(task => task.cancel && task.cancel());
+                setNetworkFieldValue('overseas-ip', edgeIp, 'ip');
+                setNetworkFieldValue('overseas-country', loc || '未知', 'location');
+                applyNetworkCardFlag('overseas-country');
+                setStatus('status-overseas', 'success');
+                console.log(`[国外测试] 成功: IP=${edgeIp}, 位置=${loc}`);
+                return;
+            } catch (error) {
+                requestTasks.forEach(task => task.cancel && task.cancel());
             }
 
             // 所有 API 都失败
@@ -21237,7 +21352,7 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
             }
         }
 
-        // 获取墙外测试数据（谷歌优先，失败回退 X.com）
+        // 获取墙外测试数据（后台并发取最快可用源）
         async function fetchTwitterData() {
             setStatus('status-twitter', 'loading');
             const statusElement = document.querySelector('#status-twitter');
@@ -21261,63 +21376,77 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
             const testSources = [
                 {
                     name: '谷歌(Google)',
-                    getIp: async () => {
+                    createTask: () => {
                         const jsonpTask = createJsonpRequest(`https://jsonp-ip.appspot.com/?_t=${Date.now()}`, 'callback');
-                        try {
-                            const payload = await jsonpTask.promise;
-                            const requestIp = String(payload?.ip || '').trim();
-                            if (isInvalidOutsideEntryIp(requestIp)) {
-                                if (requestIp === '0.0.0.0') {
-                                    throw new Error('google jsonp returned invalid ip 0.0.0.0');
+                        return {
+                            cancel: jsonpTask.cancel,
+                            promise: jsonpTask.promise.then(payload => {
+                                const requestIp = String(payload?.ip || '').trim();
+                                if (isInvalidOutsideEntryIp(requestIp)) {
+                                    if (requestIp === '0.0.0.0') {
+                                        throw new Error('google jsonp returned invalid ip 0.0.0.0');
+                                    }
+                                    throw new Error('google jsonp missing ip');
                                 }
-                                throw new Error('google jsonp missing ip');
-                            }
-                            return requestIp;
-                        } finally {
-                            jsonpTask.cancel();
-                        }
+                                return {
+                                    providerName: '谷歌(Google)',
+                                    requestIp
+                                };
+                            })
+                        };
                     }
                 },
                 {
                     name: '推特(X.com)',
-                    getIp: async () => {
-                        const response = await fetchWithTimeout(`https://help.x.com/cdn-cgi/trace?_t=${Date.now()}`, {
-                            cache: 'no-store'
-                        });
-                        if (!response.ok) {
-                            throw new Error(`x trace HTTP ${response.status}`);
-                        }
+                    createTask: () => {
+                        const controller = new AbortController();
+                        return {
+                            cancel: () => controller.abort(),
+                            promise: (async () => {
+                                const response = await fetchWithTimeout(`https://help.x.com/cdn-cgi/trace?_t=${Date.now()}`, {
+                                    cache: 'no-store',
+                                    signal: controller.signal
+                                });
+                                if (!response.ok) {
+                                    throw new Error(`x trace HTTP ${response.status}`);
+                                }
 
-                        const text = await response.text();
-                        const ipLine = text.split('\n').find(line => line.startsWith('ip='));
-                        const requestIp = String(ipLine ? ipLine.slice(3) : '').trim();
-                        if (isInvalidOutsideEntryIp(requestIp)) {
-                            if (requestIp === '0.0.0.0') {
-                                throw new Error('x trace returned invalid ip 0.0.0.0');
-                            }
-                            throw new Error('x trace missing ip');
-                        }
-                        return requestIp;
+                                const text = await response.text();
+                                const ipLine = text.split('\n').find(line => line.startsWith('ip='));
+                                const requestIp = String(ipLine ? ipLine.slice(3) : '').trim();
+                                if (isInvalidOutsideEntryIp(requestIp)) {
+                                    if (requestIp === '0.0.0.0') {
+                                        throw new Error('x trace returned invalid ip 0.0.0.0');
+                                    }
+                                    throw new Error('x trace missing ip');
+                                }
+                                return {
+                                    providerName: '推特(X.com)',
+                                    requestIp
+                                };
+                            })()
+                        };
                     }
                 }
             ];
 
             try {
+                const requestTasks = testSources.map(source => {
+                    const task = source.createTask();
+                    return {
+                        cancel: task.cancel,
+                        promise: task.promise.catch(sourceError => {
+                            console.log(`[墙外测试] ${source.name} 失败: ${sourceError.message}`);
+                            throw sourceError;
+                        })
+                    };
+                });
+
                 let fastestSuccess = null;
-                for (const source of testSources) {
-                    try {
-                        const requestIp = await source.getIp();
-                        if (isInvalidOutsideEntryIp(requestIp)) {
-                            throw new Error(`${source.name} returned invalid ip`);
-                        }
-                        fastestSuccess = {
-                            providerName: source.name,
-                            requestIp
-                        };
-                        break;
-                    } catch (sourceError) {
-                        console.log(`[墙外测试] ${source.name} 失败: ${sourceError.message}`);
-                    }
+                try {
+                    fastestSuccess = await Promise.any(requestTasks.map(task => task.promise));
+                } finally {
+                    requestTasks.forEach(task => task.cancel && task.cancel());
                 }
 
                 if (!fastestSuccess) {
@@ -21364,6 +21493,10 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
 
         // 加载网络信息
         async function loadNetworkInfo() {
+            if (networkInfoLoadPromise) {
+                return networkInfoLoadPromise;
+            }
+
             // 检查容器是否存在
             const container = document.querySelector('.network-cards-container');
             if (!container) return;
@@ -21372,30 +21505,29 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
             // 设置加载标志
             networkInfoLoaded = true;
 
-            // 并行获取所有网络信息
-            await Promise.all([
-                fetchIpipData(),
-                fetchOverseasTestData(),
-                fetchCloudFlareData(),
-                fetchTwitterData()
-            ]);
+            const networkTasks = [
+                { name: '国外测试', run: fetchOverseasTestData },
+                { name: 'CloudFlare', run: fetchCloudFlareData },
+                { name: '国内测试', run: fetchIpipData },
+                { name: '墙外测试', run: fetchTwitterData }
+            ];
 
-            // 所有网络信息加载完成后,使 IP 可点击
-            setTimeout(() => {
-                makeIpClickable();
-            }, 500);
+            networkInfoLoadPromise = (async () => {
+                for (let i = 0; i < networkTasks.length; i++) {
+                    await runNetworkInfoBackgroundTask(networkTasks[i], i);
+                }
+
+                // 所有网络信息加载完成后,使 IP 可点击
+                setTimeout(() => {
+                    makeIpClickable();
+                }, 500);
+            })();
+
+            return networkInfoLoadPromise;
         }
 
-        // 页面加载时自动获取网络信息（因为模块现在默认展开）
-        if (document.readyState !== 'loading') {
-            // 页面已加载，直接加载数据
-            loadNetworkInfo();
-        } else {
-            // 页面还在加载，等待加载完成
-            document.addEventListener('DOMContentLoaded', () => {
-                loadNetworkInfo();
-            });
-        }
+        // 页面加载完成并进入空闲状态后，在后台获取网络信息，避免影响前台初始化
+        scheduleNetworkInfoLoad();
 
         // IP 点击查询详情功能
         function makeIpClickable() {
