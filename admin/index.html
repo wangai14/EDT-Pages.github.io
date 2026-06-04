@@ -25,24 +25,12 @@
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            overflow: hidden
+            min-height: 100vh;
+            overflow: hidden;
+            background: var(--admin-bg-base)
         }
 
         /* 通用动画 */
-        @keyframes blurOverlayAppear {
-            0% {
-                opacity: 0;
-                -webkit-backdrop-filter: blur(0px);
-                backdrop-filter: blur(0px);
-            }
-
-            100% {
-                opacity: 1;
-                -webkit-backdrop-filter: blur(12px);
-                backdrop-filter: blur(12px);
-            }
-        }
-
         @keyframes containerAppear {
             0% {
                 opacity: 0;
@@ -122,32 +110,6 @@
             to {
                 transform: rotate(360deg)
             }
-        }
-
-        /* 背景和遮罩层 */
-        #background-iframe {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: 0;
-            z-index: -3 !important
-        }
-
-        #blur-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0, rgba(118, 75, 162, 0.15) 100%);
-            -webkit-backdrop-filter: blur(12px);
-            backdrop-filter: blur(12px);
-            z-index: -2 !important;
-            animation: blurOverlayAppear 1.5s ease-out forwards .3s;
-            pointer-events: none;
-            opacity: 0
         }
 
         /* 通用容器包装器 */
@@ -2488,9 +2450,7 @@
             --input-border: #e5e7eb;
             --overlay-bg: rgba(255, 255, 255, 0.7);
             --blur-overlay: rgba(0, 0, 0, 0.3);
-            --lowperf-bg-start: #f5f7fb;
-            --lowperf-bg-end: #eef2f7;
-            --lowperf-overlay: rgba(255, 255, 255, 0.14);
+            --admin-bg-base: #f8fafc;
             --latency-49: #4CAF50;
             --latency-149: #83DA00;
             --latency-299: #f58722;
@@ -2509,18 +2469,11 @@
             --input-border: #444444;
             --overlay-bg: rgba(32, 32, 32, 0.7);
             --blur-overlay: rgba(0, 0, 0, 0.8);
-            --lowperf-bg-start: #0f172a;
-            --lowperf-bg-end: #1f2937;
-            --lowperf-overlay: rgba(15, 23, 42, 0.45);
+            --admin-bg-base: #070b12;
         }
 
         html.dark-mode body {
-            background: linear-gradient(135deg, #1a1a1a 0, #2a2a2a 50%, #1a1a1a 100%) !important;
             color: var(--text-primary)
-        }
-
-        html.dark-mode #blur-overlay {
-            background: var(--blur-overlay)
         }
 
         html.dark-mode .card-container {
@@ -2533,7 +2486,7 @@
 
         html.dark-mode .header {
             background: rgba(39, 39, 39, 0.95);
-            border-image: linear-gradient(90deg, #7c3aed 0, #5b21b6 50%, #7c3aed 100%) 1
+            border-image: linear-gradient(90deg, #faab41 0, #f6821f 50%, #faab41 100%) 1
         }
 
         html.dark-mode .module {
@@ -7579,21 +7532,8 @@
         }
 
         /* 低性能模式（自动触发）：禁用高开销视觉效果，优化无硬件加速场景 */
-        html.low-performance-mode #background-iframe {
-            display: none !important;
-        }
-
-        html.low-performance-mode #blur-overlay {
-            display: block !important;
-            opacity: 1 !important;
-            animation: none !important;
-            background: var(--blur-overlay) !important;
-            -webkit-backdrop-filter: none !important;
-            backdrop-filter: none !important;
-        }
-
         html.low-performance-mode body {
-            background: linear-gradient(135deg, var(--lowperf-bg-start) 0%, var(--lowperf-bg-end) 100%) !important;
+            background: var(--admin-bg-base) !important;
         }
 
         html.low-performance-mode .card-container,
@@ -7640,12 +7580,6 @@
 </head>
 
 <body>
-    <!-- 背景内容 -->
-    <iframe id="background-iframe" src="about:blank" data-src="/" loading="lazy" title="背景内容"></iframe>
-
-    <!-- 毛玻璃效果遮盖层 -->
-    <div id="blur-overlay"></div>
-
     <!-- 管理后台容器 -->
     <div class="page-wrapper">
         <div class="card-container">
@@ -13673,21 +13607,6 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
             console.info(`[perf] Low performance mode enabled: ${reason}`);
         }
 
-        function initBackgroundIframe() {
-            const iframe = document.getElementById('background-iframe');
-            if (!iframe) return;
-
-            if (isLowPerformanceMode) {
-                iframe.setAttribute('src', 'about:blank');
-                return;
-            }
-
-            const targetSrc = iframe.getAttribute('data-src') || '/';
-            if (iframe.getAttribute('src') !== targetSrc) {
-                iframe.setAttribute('src', targetSrc);
-            }
-        }
-
         function measureAverageFrameTime(sampleCount = 18, timeoutMs = 1500) {
             return new Promise((resolve) => {
                 if (!window.requestAnimationFrame) {
@@ -13782,7 +13701,6 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                 if (avgFrameTime > 20) {
                     enableLowPerformanceMode(`post-load-frame-time=${avgFrameTime.toFixed(1)}ms`);
                 }
-                initBackgroundIframe();
             };
 
             const launch = () => {
@@ -13804,7 +13722,6 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                 if (forcedMode) {
                     enableLowPerformanceMode('manual');
                 }
-                initBackgroundIframe();
                 return;
             }
 
@@ -13815,13 +13732,11 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
 
             if (prefersReducedMotion || (cpuCores > 0 && cpuCores <= 4) || (memoryGB > 0 && memoryGB <= 4)) {
                 enableLowPerformanceMode('device-hints');
-                initBackgroundIframe();
                 return;
             }
 
             if (rendererProbe.isSoftware) {
                 enableLowPerformanceMode(rendererProbe.reason);
-                initBackgroundIframe();
                 return;
             }
 
@@ -13830,7 +13745,6 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                 enableLowPerformanceMode(`startup-frame-time=${avgFrameTime.toFixed(1)}ms`);
             }
 
-            initBackgroundIframe();
             schedulePerformanceRecheck();
         }
 
